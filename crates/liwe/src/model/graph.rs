@@ -46,6 +46,7 @@ pub enum GraphInline {
     Strong(GraphInlines),
     Subscript(GraphInlines),
     Superscript(GraphInlines),
+    Tag(String),
     Underline(GraphInlines),
 }
 
@@ -153,6 +154,7 @@ impl GraphInline {
     pub fn to_markdown(&self, options: &MarkdownOptions) -> String {
         match self {
             GraphInline::Str(text) => text.clone(),
+            GraphInline::Tag(tag) => format!("#{tag}"),
             GraphInline::Emph(emph) => format!("*{}*", inlines_to_markdown(emph, options)),
             GraphInline::Underline(underline) => inlines_to_markdown(underline, options),
             GraphInline::Strong(strong) => format!("**{}**", inlines_to_markdown(strong, options)),
