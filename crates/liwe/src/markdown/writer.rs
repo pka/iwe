@@ -80,6 +80,15 @@ impl MarkdownWriter {
                 }
                 events.push(Event::End(TagEnd::List(false)));
             }
+            GraphBlock::TaskList(items) => {
+                events.push(Event::Start(Tag::List(None)));
+                for item in items {
+                    events.push(Event::Start(Tag::Item));
+                    events.append(&mut self.blocks_events(item));
+                    events.push(Event::End(TagEnd::Item));
+                }
+                events.push(Event::End(TagEnd::List(false)));
+            }
             GraphBlock::OrderedList(items) => {
                 events.push(Event::Start(Tag::List(Some(1))));
                 for blocks in items {

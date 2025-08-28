@@ -7,7 +7,6 @@ use crate::model::{Key, Lang, LineRange};
 
 pub struct Document {
     pub blocks: DocumentBlocks,
-    pub tasks: Vec<String>,
     pub tags: Vec<String>,
     pub metadata: Option<String>,
 }
@@ -21,6 +20,7 @@ pub enum DocumentBlock {
     BlockQuote(BlockQuote),
     OrderedList(OrderedList),
     BulletList(BulletList),
+    TaskList(TaskList),
     Header(Header),
     HorizontalRule(HorizontalRule),
     Div(Div),
@@ -125,6 +125,19 @@ impl DocumentBlock {
                 })
                 .collect::<Vec<String>>()
                 .join("\n"),
+            DocumentBlock::TaskList(task_list) => task_list
+                .items
+                .iter()
+                .map(|(checked, item)| {
+                    let item_text = item
+                        .iter()
+                        .map(|block| block.to_section_plain_text())
+                        .collect::<Vec<String>>()
+                        .join("\n");
+                    format!("{} {item_text}", if *checked { "x" } else { " " })
+                })
+                .collect::<Vec<String>>()
+                .join("\n"),
             DocumentBlock::Header(header) => {
                 let header_text: String = header
                     .inlines
@@ -222,6 +235,7 @@ impl DocumentBlock {
             DocumentBlock::BlockQuote(_) => true,
             DocumentBlock::OrderedList(_) => true,
             DocumentBlock::BulletList(_) => true,
+            DocumentBlock::TaskList(_) => true,
             DocumentBlock::Header(_) => false,
             DocumentBlock::HorizontalRule(_) => false,
             DocumentBlock::Div(_) => true,
@@ -318,6 +332,18 @@ impl DocumentBlock {
                 let last_block = item.last_mut().unwrap();
                 last_block.append_inline(inline, line_range.clone());
             }
+            DocumentBlock::TaskList(list) => {
+                let item = list.items.last_mut().unwrap();
+
+                if item.1.is_empty() {
+                    item.1.push(DocumentBlock::Para(Para {
+                        line_range: line_range.clone(),
+                        inlines: Vec::new(),
+                    }));
+                }
+                let last_block = item.1.last_mut().unwrap();
+                last_block.append_inline(inline, line_range.clone());
+            }
             DocumentBlock::Header(header) => header.inlines.push(inline),
             DocumentBlock::HorizontalRule(_) => {}
             DocumentBlock::Div(_) => {}
@@ -348,6 +374,9 @@ impl DocumentBlock {
             DocumentBlock::BulletList(list) => {
                 list.items.first().unwrap().first().unwrap().line_range()
             }
+            DocumentBlock::TaskList(list) => {
+                list.items.first().unwrap().1.first().unwrap().line_range()
+            }
             DocumentBlock::Header(header) => header.line_range.clone(),
             DocumentBlock::HorizontalRule(hr) => hr.line_range.clone(),
             DocumentBlock::Div(div) => div.line_range.clone(),
@@ -364,6 +393,7 @@ impl DocumentBlock {
             DocumentBlock::BlockQuote(quote) => quote.blocks.iter().collect(),
             DocumentBlock::OrderedList(list) => list.items.iter().flat_map(|i| i).collect(),
             DocumentBlock::BulletList(list) => list.items.iter().flat_map(|i| i).collect(),
+            DocumentBlock::TaskList(list) => list.items.iter().flat_map(|(_, i)| i).collect(),
             DocumentBlock::Header(_) => vec![],
             DocumentBlock::HorizontalRule(_) => vec![],
             DocumentBlock::Div(div) => div.blocks.iter().collect(),
@@ -449,6 +479,11 @@ pub struct OrderedList {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BulletList {
     pub items: Vec<DocumentBlocks>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TaskList {
+    pub items: Vec<(bool, DocumentBlocks)>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

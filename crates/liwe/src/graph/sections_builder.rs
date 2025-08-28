@@ -6,7 +6,7 @@ use itertools::Itertools;
 
 use crate::model::document::DocumentBlock::{
     self, BlockQuote, BulletList, CodeBlock, Div, Header, HorizontalRule, OrderedList, Para, Plain,
-    RawBlock,
+    RawBlock, TaskList,
 };
 use crate::model::document::DocumentBlocks;
 use crate::model::graph::to_graph_inlines;
@@ -166,6 +166,17 @@ impl<'a> SectionsBuilder<'a> {
                 let id = self.builder.id();
 
                 for b in list.items.iter() {
+                    self.process_section(0..b.len(), b);
+                }
+
+                self.builder.set_id(id);
+            }
+            TaskList(list) => {
+                self.builder.task_list();
+                self.builder.set_insert(true);
+                let id = self.builder.id();
+
+                for (_, b) in list.items.iter() {
                     self.process_section(0..b.len(), b);
                 }
 

@@ -57,6 +57,11 @@ impl Projector {
                     ));
                 }
             }
+            Node::TaskList() => {
+                if let Some(child) = iter.child() {
+                    blocks.push(GraphBlock::TaskList(self.with(0).project_list_item(child)));
+                }
+            }
             Node::OrderedList() => {
                 if let Some(child) = iter.child() {
                     blocks.push(GraphBlock::OrderedList(

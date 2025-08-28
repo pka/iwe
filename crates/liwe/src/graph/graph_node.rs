@@ -1,7 +1,5 @@
-use crate::model::{
-    Key, LineId, MaybeLineId, MaybeNodeId, NodeId,
-};
 use crate::model::node::{ColumnAlignment, ReferenceType};
+use crate::model::{Key, LineId, MaybeLineId, MaybeNodeId, NodeId};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum GraphNode {
@@ -10,6 +8,7 @@ pub enum GraphNode {
     Section(Section),
     Quote(Quote),
     BulletList(BulletList),
+    TaskList(TaskList),
     OrderedList(OrderedList),
     Leaf(Leaf),
     Raw(RawLeaf),
@@ -107,6 +106,15 @@ pub struct BulletList {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct TaskList {
+    id: NodeId,
+
+    prev: NodeId,
+    next: MaybeNodeId,
+    child: MaybeNodeId,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct OrderedList {
     id: NodeId,
 
@@ -116,6 +124,19 @@ pub struct OrderedList {
 }
 
 impl BulletList {
+    pub fn id(&self) -> NodeId {
+        self.id
+    }
+
+    pub fn child_id(&self) -> MaybeNodeId {
+        self.child
+    }
+    pub fn next_id(&self) -> MaybeNodeId {
+        self.next
+    }
+}
+
+impl TaskList {
     pub fn id(&self) -> NodeId {
         self.id
     }
@@ -277,6 +298,7 @@ impl GraphNode {
             GraphNode::Section(section) => Some(section.prev),
             GraphNode::Quote(quote) => Some(quote.prev),
             GraphNode::BulletList(list) => Some(list.prev),
+            GraphNode::TaskList(list) => Some(list.prev),
             GraphNode::OrderedList(list) => Some(list.prev),
             GraphNode::Leaf(leaf) => Some(leaf.prev),
             GraphNode::Reference(reference) => Some(reference.prev),
@@ -295,6 +317,7 @@ impl GraphNode {
             GraphNode::Quote(quote) => quote.id,
             GraphNode::HorizontalRule(rule) => rule.id,
             GraphNode::BulletList(list) => list.id,
+            GraphNode::TaskList(list) => list.id,
             GraphNode::OrderedList(list) => list.id,
             GraphNode::Leaf(leaf) => leaf.id,
             GraphNode::Raw(leaf) => leaf.id,
@@ -440,6 +463,7 @@ impl GraphNode {
             GraphNode::Quote(quote) => quote.next,
             GraphNode::HorizontalRule(quote) => quote.next,
             GraphNode::BulletList(list) => list.next,
+            GraphNode::TaskList(list) => list.next,
             GraphNode::OrderedList(list) => list.next,
             GraphNode::Leaf(leaf) => leaf.next,
             GraphNode::Raw(leaf) => leaf.next,
@@ -456,6 +480,7 @@ impl GraphNode {
             GraphNode::Quote(_) => "Q",
             GraphNode::HorizontalRule(_) => "R",
             GraphNode::BulletList(_) => "L",
+            GraphNode::TaskList(_) => "L",
             GraphNode::OrderedList(_) => "L",
             GraphNode::Leaf(_) => "F",
             GraphNode::Raw(_) => "C",
@@ -473,6 +498,7 @@ impl GraphNode {
             GraphNode::Section(section) => section.child,
             GraphNode::Quote(quote) => quote.child,
             GraphNode::BulletList(list) => list.child,
+            GraphNode::TaskList(list) => list.child,
             GraphNode::OrderedList(list) => list.child,
             _ => None,
         }
@@ -491,6 +517,7 @@ impl GraphNode {
             GraphNode::Section(section) => section.next = Some(next),
             GraphNode::Quote(quote) => quote.next = Some(next),
             GraphNode::BulletList(list) => list.next = Some(next),
+            GraphNode::TaskList(list) => list.next = Some(next),
             GraphNode::OrderedList(list) => list.next = Some(next),
             GraphNode::Leaf(leaf) => leaf.next = Some(next),
             GraphNode::HorizontalRule(rule) => rule.next = Some(next),
@@ -508,6 +535,7 @@ impl GraphNode {
             GraphNode::Section(section) => section.child = Some(child),
             GraphNode::Quote(quote) => quote.child = Some(child),
             GraphNode::BulletList(list) => list.child = Some(child),
+            GraphNode::TaskList(list) => list.child = Some(child),
             GraphNode::OrderedList(list) => list.child = Some(child),
             GraphNode::Leaf(_) => panic!("cant set child for leaf"),
             GraphNode::Raw(_) => panic!("cant set child for raw"),
@@ -524,6 +552,7 @@ impl GraphNode {
             GraphNode::Section(_) => true,
             GraphNode::Quote(_) => true,
             GraphNode::BulletList(_) => true,
+            GraphNode::TaskList(_) => true,
             GraphNode::OrderedList(_) => true,
             GraphNode::Leaf(_) => false,
             GraphNode::Raw(_) => false,
@@ -594,6 +623,15 @@ impl GraphNode {
 
     pub fn new_bullet_list(prev: NodeId, id: NodeId) -> GraphNode {
         GraphNode::BulletList(BulletList {
+            id,
+            prev,
+            next: None,
+            child: None,
+        })
+    }
+
+    pub fn new_task_list(prev: NodeId, id: NodeId) -> GraphNode {
+        GraphNode::TaskList(TaskList {
             id,
             prev,
             next: None,

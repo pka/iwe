@@ -97,6 +97,10 @@ impl<'a> GraphBuilder<'a> {
         self.bullet_list_and(|_| {});
     }
 
+    pub fn task_list(&mut self) {
+        self.task_list_and(|_| {});
+    }
+
     pub fn ordered_list(&mut self) {
         self.ordered_list_and(|_| {});
     }
@@ -107,6 +111,14 @@ impl<'a> GraphBuilder<'a> {
     {
         let new_id = self.graph.new_node_id();
         self.add_node_and(GraphNode::new_bullet_list(self.id, new_id), f);
+    }
+
+    pub fn task_list_and<F>(&mut self, f: F)
+    where
+        F: FnOnce(&mut GraphBuilder) -> (),
+    {
+        let new_id = self.graph.new_node_id();
+        self.add_node_and(GraphNode::new_task_list(self.id, new_id), f);
     }
 
     pub fn ordered_list_and<F>(&mut self, f: F)
@@ -255,6 +267,10 @@ impl<'a> GraphBuilder<'a> {
             Node::BulletList() => {
                 let new_id = self.graph.new_node_id();
                 self.add_node_and2(GraphNode::new_bullet_list(self.id, new_id), f);
+            }
+            Node::TaskList() => {
+                let new_id = self.graph.new_node_id();
+                self.add_node_and2(GraphNode::new_task_list(self.id, new_id), f);
             }
             Node::OrderedList() => {
                 let new_id = self.graph.new_node_id();

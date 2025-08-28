@@ -15,10 +15,9 @@ pub struct MarkdownEventsReader {
     inlines_stack: Vec<DocumentInline>,
     blocks_stack: Vec<DocumentBlock>,
     blocks: DocumentBlocks,
-    tasks: Vec<String>,
+    taskslists: Vec<bool>,
     hashtags: Vec<String>,
     line_starts: Vec<usize>,
-    tasklist_block: bool,
     metadata_block: bool,
     metadata: Option<String>,
 }
@@ -30,10 +29,9 @@ impl MarkdownEventsReader {
             inlines_stack: Vec::new(),
             blocks_stack: Vec::new(),
             blocks: Vec::new(),
-            tasks: Vec::new(),
+            taskslists: Vec::new(),
             hashtags: Vec::new(),
             line_starts: Vec::new(),
-            tasklist_block: false,
             metadata_block: false,
             metadata: None,
         }
@@ -41,10 +39,6 @@ impl MarkdownEventsReader {
 
     pub fn blocks(&self) -> Vec<DocumentBlock> {
         self.blocks.clone()
-    }
-
-    pub fn tasks(&self) -> Vec<String> {
-        self.tasks.clone()
     }
 
     pub fn hashtags(&self) -> Vec<String> {
@@ -122,12 +116,8 @@ impl MarkdownEventsReader {
                     self.pop_block();
                 }
                 TaskListMarker(checked) => {
-                    self.tasklist_block = true;
-                    self.push_inline(
-                        DocumentInline::Str(if checked { "[x] " } else { "[ ] " }.to_string()),
-                        self.to_line_range(range),
-                    );
-                    self.pop_inline();
+                    dbg!(&self.blocks_stack.last().expect("to have element"));
+                    self.taskslists.push(checked);
                 }
             }
         }
@@ -319,6 +309,7 @@ impl MarkdownEventsReader {
             TagEnd::HtmlBlock => {}
             TagEnd::List(_) => {
                 self.pop_block();
+                self.taskslists.clear();
             }
             TagEnd::Item => {}
             TagEnd::Emphasis => self.pop_inline(),
@@ -389,10 +380,6 @@ impl MarkdownEventsReader {
                         self.pop_inline();
                     }
                 }
-            }
-            if self.tasklist_block {
-                self.tasks.push(text.to_string());
-                self.tasklist_block = false;
             }
         } else {
             self.metadata = Some(text.to_string());
@@ -619,11 +606,63 @@ mod tests {
         - [ ] todo1
               second line
         - [x] todo2
-        * [ ] todo3
+        - no task
+        - [X] todo3
         "};
         let mut reader = MarkdownEventsReader::new();
-        let _ = reader.read(content);
-        assert_eq!(reader.tasks, vec!["todo1", "todo2", "todo3"]);
+        let actual = reader.read(content);
+        let expected = vec![DocumentBlock::BulletList(BulletList {
+            items: vec![
+                vec![DocumentBlock::Para(Para {
+                    line_range: 0..1,
+                    inlines: vec![
+                        DocumentInline::Str("todo1".to_string()),
+                        DocumentInline::Str("second line".to_string()),
+                    ],
+                })],
+                vec![DocumentBlock::Para(Para {
+                    line_range: 2..3,
+                    inlines: vec![DocumentInline::Str("todo2".to_string())],
+                })],
+                vec![DocumentBlock::Para(Para {
+                    line_range: 3..4,
+                    inlines: vec![DocumentInline::Str("no task".to_string())],
+                })],
+                vec![DocumentBlock::Para(Para {
+                    line_range: 4..5,
+                    inlines: vec![DocumentInline::Str("todo3".to_string())],
+                })],
+            ],
+        })];
+        // let expected = vec![DocumentBlock::TaskList(TaskList {
+        //     items: vec![
+        //         (
+        //             false,
+        //             vec![DocumentBlock::Para(Para {
+        //                 line_range: 0..1,
+        //                 inlines: vec![DocumentInline::Str("todo1".to_string())],
+        //             })],
+        //         ),
+        //         (
+        //             true,
+        //             vec![DocumentBlock::Para(Para {
+        //                 line_range: 1..2,
+        //                 inlines: vec![DocumentInline::Str("todo2".to_string())],
+        //             })],
+        //         ),
+        //         (
+        //             false,
+        //             vec![DocumentBlock::Para(Para {
+        //                 line_range: 2..3,
+        //                 inlines: vec![DocumentInline::Str("todo3".to_string())],
+        //             })],
+        //         ),
+        //     ],
+        // })];
+
+        dbg!(&reader.taskslists);
+        assert_eq!(expected, actual);
+        assert_eq!(reader.taskslists.len(), 3);
     }
 
     #[test]
@@ -750,7 +789,6 @@ mod tests {
                 "tag5"
             ]
         );
-        assert_eq!(reader.tasks, vec!["todo #tag3", "#tag4"]);
     }
 
     #[test]

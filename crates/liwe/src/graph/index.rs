@@ -104,6 +104,14 @@ impl RefIndex {
                     self.index_node(graph, child_id);
                 });
             }
+            GraphNode::TaskList(task_list) => {
+                task_list.child_id().map(|child_id| {
+                    self.index_node(graph, child_id);
+                });
+                task_list.next_id().map(|child_id| {
+                    self.index_node(graph, child_id);
+                });
+            }
             GraphNode::OrderedList(ordered_list) => {
                 ordered_list.child_id().map(|child_id| {
                     self.index_node(graph, child_id);

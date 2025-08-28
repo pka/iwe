@@ -13,6 +13,7 @@ pub enum Node {
     Section(GraphInlines),
     Quote(),
     BulletList(),
+    TaskList(),
     OrderedList(),
     Leaf(GraphInlines),
     Raw(Option<String>, String),

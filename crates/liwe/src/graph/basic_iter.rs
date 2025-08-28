@@ -82,6 +82,7 @@ impl<'a> NodeIter<'a> for GraphNodePointer<'a> {
             )),
             GraphNode::Quote(_) => Some(Node::Quote()),
             GraphNode::BulletList(_) => Some(Node::BulletList()),
+            GraphNode::TaskList(_) => Some(Node::TaskList()),
             GraphNode::OrderedList(_) => Some(Node::OrderedList()),
             GraphNode::Leaf(leaf) => Some(Node::Leaf(
                 self.graph.get_line(leaf.line_id()).normalize(self.graph),

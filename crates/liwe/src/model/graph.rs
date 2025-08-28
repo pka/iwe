@@ -19,6 +19,7 @@ pub enum GraphBlock {
     BlockQuote(Blocks),
     OrderedList(Vec<Blocks>),
     BulletList(Vec<Blocks>),
+    TaskList(Vec<Blocks>),
     Header(Level, GraphInlines),
     HorizontalRule,
     Table(
@@ -115,6 +116,17 @@ impl GraphBlock {
                 .collect::<Vec<String>>()
                 .join(if self.is_sparce_list() { "\n" } else { "" }),
             GraphBlock::BulletList(items) => items
+                .iter()
+                .map(|item| {
+                    left_pad_and_prefix(&blocks_to_markdown_and(
+                        item,
+                        self.is_sparce_list(),
+                        options,
+                    ))
+                })
+                .collect::<Vec<String>>()
+                .join(if self.is_sparce_list() { "\n" } else { "" }),
+            GraphBlock::TaskList(items) => items
                 .iter()
                 .map(|item| {
                     left_pad_and_prefix(&blocks_to_markdown_and(
