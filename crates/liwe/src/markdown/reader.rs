@@ -17,7 +17,6 @@ pub struct MarkdownEventsReader {
     inlines_stack: Vec<DocumentInline>,
     blocks_stack: Vec<DocumentBlock>,
     blocks: DocumentBlocks,
-    hashtags: Vec<String>,
     line_starts: Vec<usize>,
     metadata_block: bool,
     metadata: Option<String>,
@@ -38,7 +37,6 @@ impl MarkdownEventsReader {
             inlines_stack: Vec::new(),
             blocks_stack: Vec::new(),
             blocks: Vec::new(),
-            hashtags: Vec::new(),
             line_starts: Vec::new(),
             metadata_block: false,
             metadata: None,
@@ -65,10 +63,6 @@ impl MarkdownEventsReader {
 
     pub fn blocks(&self) -> Vec<DocumentBlock> {
         self.blocks.clone()
-    }
-
-    pub fn hashtags(&self) -> Vec<String> {
-        self.hashtags.clone()
     }
 
     pub fn metadata(&self) -> Option<String> {
@@ -402,7 +396,6 @@ impl MarkdownEventsReader {
                             self.to_line_range(range.clone()),
                         );
                         self.pop_inline();
-                        self.hashtags.push(tag.as_str().to_string());
                         pos = tag.end();
                     }
                     // Remaining text
@@ -785,8 +778,13 @@ mod tests {
             }),
         ];
         assert_eq!(expected, actual);
+
+        let doc = Document {
+            blocks: reader.blocks(),
+            metadata: reader.metadata(),
+        };
         assert_eq!(
-            reader.hashtags,
+            doc.tags().collect::<Vec<String>>(),
             vec![
                 "tag1",
                 "tag2",
