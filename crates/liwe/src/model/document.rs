@@ -692,6 +692,7 @@ impl DocumentInline {
             DocumentInline::Link(link) => Self::inlines_to_plain_text(&link.inlines),
             DocumentInline::Image(image) => Self::inlines_to_plain_text(&image.inlines),
             DocumentInline::RawInline(raw_inline) => raw_inline.content.clone(),
+            DocumentInline::Tag(tag) => format!("#{tag}"),
             _ => "".into(),
         }
     }
