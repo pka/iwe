@@ -130,8 +130,24 @@ impl MarkdownEventsReader {
                     self.pop_inline();
                 }
                 FootnoteReference(_) => {}
-                SoftBreak => {}
-                HardBreak => {}
+                SoftBreak => {
+                    self.push_inline(
+                        DocumentInline::SoftBreak(document::SoftBreak {
+                            inline_range: self.to_inline_range(range.clone()),
+                        }),
+                        self.to_line_range(range),
+                    );
+                    self.pop_inline();
+                }
+                HardBreak => {
+                    self.push_inline(
+                        DocumentInline::LineBreak(document::LineBreak {
+                            inline_range: self.to_inline_range(range.clone()),
+                        }),
+                        self.to_line_range(range),
+                    );
+                    self.pop_inline();
+                }
                 Rule => {
                     self.push_block(DocumentBlock::HorizontalRule(HorizontalRule {
                         line_range: self.to_line_range(range),
@@ -642,6 +658,15 @@ mod tests {
                     inlines: vec![
                         DocumentInline::Task(false),
                         DocumentInline::Str("todo1".to_string()),
+                        DocumentInline::SoftBreak(SoftBreak {
+                            inline_range: Position {
+                                line: 0,
+                                character: 11,
+                            }..Position {
+                                line: 1,
+                                character: 0,
+                            },
+                        }),
                         DocumentInline::Str("second line".to_string()),
                     ],
                 })],
@@ -676,7 +701,7 @@ mod tests {
             doc.tasks()
                 .map(|t| t.to_section_plain_text())
                 .collect::<Vec<String>>(),
-            vec!["todo1second line", "todo2", "todo3"]
+            vec!["todo1\nsecond line", "todo2", "todo3"]
         );
     }
 
@@ -708,17 +733,89 @@ mod tests {
                     DocumentInline::Str("Text ".to_string()),
                     DocumentInline::Tag("tag1".to_string()),
                     DocumentInline::Str(" end".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 0,
+                            character: 14,
+                        }..Position {
+                            line: 1,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Tag("tag2".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 1,
+                            character: 5,
+                        }..Position {
+                            line: 2,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Str("no#tag".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 2,
+                            character: 6,
+                        }..Position {
+                            line: 3,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Str("no # tag".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 3,
+                            character: 8,
+                        }..Position {
+                            line: 4,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Tag("invalid".to_string()),
                     DocumentInline::Str("#tag".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 4,
+                            character: 12,
+                        }..Position {
+                            line: 5,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Tag("multiple".to_string()),
                     DocumentInline::Str(" ".to_string()),
                     DocumentInline::Tag("tags".to_string()),
                     DocumentInline::Str(" in line".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 5,
+                            character: 23,
+                        }..Position {
+                            line: 6,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Tag("nested/tag".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 6,
+                            character: 11,
+                        }..Position {
+                            line: 7,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Tag("tag_with-delimiters".to_string()),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 7,
+                            character: 20,
+                        }..Position {
+                            line: 8,
+                            character: 0,
+                        },
+                    }),
                     DocumentInline::Tag("invalid".to_string()),
                     DocumentInline::Str(".tag".to_string()),
                 ],
@@ -778,6 +875,15 @@ mod tests {
                         }..Position {
                             line: 13,
                             character: 19,
+                        },
+                    }),
+                    DocumentInline::SoftBreak(SoftBreak {
+                        inline_range: Position {
+                            line: 13,
+                            character: 19,
+                        }..Position {
+                            line: 14,
+                            character: 0,
                         },
                     }),
                     DocumentInline::Str("End ".to_string()),
